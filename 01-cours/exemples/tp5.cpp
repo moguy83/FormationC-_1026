@@ -160,162 +160,176 @@ int main()
 // #include <string>
 // #include <vector>
 
-// class Noeud
-//     : public std::enable_shared_from_this<Noeud>
-// {
-// private:
-//     std::string nom_;
+class Noeud
+    : public std::enable_shared_from_this<Noeud>
+{
+private:
+    std::string nom_;
 
-//     std::vector<std::shared_ptr<Noeud>> enfants_;
+    std::vector<std::shared_ptr<Noeud>> enfants_;
 
-//     std::weak_ptr<Noeud> parent_;
+    std::weak_ptr<Noeud> parent_;
 
-// public:
-//     explicit Noeud(std::string nom)
-//         : nom_(std::move(nom))
-//     {
-//         std::cout
-//             << "Construction de "
-//             << nom_
-//             << '\n';
-//     }
+public:
+    explicit Noeud(std::string nom)
+        : nom_(std::move(nom))
+    {
+        std::cout
+            << "Construction de "
+            << nom_
+            << '\n';
+    }
 
-//     ~Noeud()
-//     {
-//         std::cout
-//             << "Destruction de "
-//             << nom_
-//             << '\n';
-//     }
+    ~Noeud()
+    {
+        std::cout
+            << "Destruction de "
+            << nom_
+            << '\n';
+    }
 
-//     void ajouterEnfant(
-//         const std::shared_ptr<Noeud>& enfant)
-//     {
-//         enfants_.push_back(enfant);
+    void ajouterEnfant(
+        const std::shared_ptr<Noeud> &enfant)
+    {
+        enfants_.push_back(enfant);
 
-//         enfant->parent_ = shared_from_this();
-//     }
+        enfant->parent_ = shared_from_this();
+    }
 
-//     void afficher() const
-//     {
-//         std::cout << nom_;
+    void afficher() const
+    {
+        std::cout << nom_;
 
-//         if (auto p = parent_.lock()) {
-//             std::cout
-//                 << " (parent : "
-//                 << p->nom_
-//                 << ")";
-//         } else {
-//             std::cout << " (racine)";
-//         }
+        if (auto p = parent_.lock())
+        {
+            std::cout
+                << " (parent : "
+                << p->nom_
+                << ")";
+        }
+        else
+        {
+            std::cout << " (racine)";
+        }
 
-//         std::cout << '\n';
+        std::cout << '\n';
 
-//         for (const auto& enfant : enfants_) {
-//             enfant->afficher();
-//         }
-//     }
-// };
+        for (const auto &enfant : enfants_)
+        {
+            enfant->afficher();
+        }
+    }
+};
 
-// int main()
-// {
-//     {
-//         auto racine =
-//             std::make_shared<Noeud>("Racine");
+int main()
+{
+    {
+        auto racine =
+            std::make_shared<Noeud>("Racine");
 
-//         auto a =
-//             std::make_shared<Noeud>("A");
+        auto a =
+            std::make_shared<Noeud>("A");
 
-//         auto b =
-//             std::make_shared<Noeud>("B");
+        auto b =
+            std::make_shared<Noeud>("B");
 
-//         auto c =
-//             std::make_shared<Noeud>("C");
+        auto c =
+            std::make_shared<Noeud>("C");
 
-//         racine->ajouterEnfant(a);
-//         racine->ajouterEnfant(b);
+        racine->ajouterEnfant(a);
+        racine->ajouterEnfant(b);
 
-//         a->ajouterEnfant(c);
+        a->ajouterEnfant(c);
 
-//         racine->afficher();
-//     }
+        racine->afficher();
+    }
 
-//     std::cout << "Fin du programme\n";
-// }
+    std::cout << "Fin du programme\n";
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // C. Exercice C — Remplacer les new/delete
 
-// ancien code
-// class Objet {
-// public:
-//     void travailler()
-//     {
-//         std::cout << "Travail\n";
-//     }
-// };
+// ancien code class Objet
 
-// void ancienCode()
-// {
-//     Objet* objet = new Objet();
+class Objet
+{
+public:
+    void travailler()
+    {
+        std::cout << "Travail\n";
+    }
+};
 
-//     objet->travailler();
+void ancienCode()
+{
+    Objet *objet = new Objet();
 
-//     delete objet;
-// }
+    objet->travailler();
 
-// // c+ moderne
-// void nouveauCode()
-// {
-//     auto objet = std::make_unique<Objet>();
+    delete objet;
+}
 
-//     objet->travailler();
-// }
+// c+ moderne
+void nouveauCode()
+{
+    auto objet = std::make_unique<Objet>();
+
+    objet->travailler();
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // D. fuites memoires, double delete, dereference null pointer
-// void fonctionBuguee() {
-//     int* a = new int(5);
-//     int* b = new int[10];
-//     int* c = nullptr;
+void fonctionBuguee()
+{
+    int *a = new int(5);
+    int *b = new int[10];
+    int *c = nullptr;
 
-//     *c = 42;               // Bug 1
-//     delete b;              // Bug 2
-//     delete a;
-//     delete a;              // Bug 3
+    *c = 42;  // Bug 1
+    delete b; // Bug 2
+    delete a;
+    delete a; // Bug 3
 
-//     Ressource* r = new Ressource();
-//     if (!r->initialiser()) return;  // Bug 4
+    Ressource *r = new Ressource();
+    if (!r->initialiser())
+        return; // Bug 4
 
-//     r->utiliser();
-//     delete r;
+    r->utiliser();
+    delete r;
 }
 
 // version modene corrige
 
-// #include <array>
-// #include <memory>
+#include <array>
+#include <memory>
 
-// void fonctionCorrigee()
-// {
-//     int a = 5;
+void fonctionCorrigee()
+{
+    int a = 5;
 
-//     std::array<int, 10> b{};
+    std::array<int, 10> b{};
 
-//     int c = 42;
+    int c = 42;
 
-//     auto r =
-//         std::make_unique<Ressource>();
+    auto r =
+        std::make_unique<Ressource>();
 
-//     if (!r->initialiser()) {
-//         return;
-//     }
+    if (!r->initialiser())
+    {
+        return;
+    }
 
-//     r->utiliser();
-// }
+    r->utiliser();
+}
 
-// int main()
-// {
-//     fonctionBuguee();
-//     // fonctionCorrigee();
-// }
+int main()
+{
+    fonctionBuguee();
+    // fonctionCorrigee();
+}
+
+// g++ -std=c++17 -g -O1 -fsanitize=address, undefine -fno-omit-frame-pointer tp5.cpp -o tp5
+
+// g++ -std=c++17 -g -O0 tp5.cpp -o tp5
+// valgrind --leak-check=full --show-leak-kinds=all ./tp5
