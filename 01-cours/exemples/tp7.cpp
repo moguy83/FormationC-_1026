@@ -1,3 +1,4 @@
+// B
 
 #include <iostream>
 #include <vector>
@@ -8,21 +9,64 @@ class CapteurTemperature {
 
 public:
     void subscribe(std::function<void(double)> callback) {
-        // TODO : enregistrer le callback
+        abonnes.push_back(callback);
     }
 
     void mesurer(double temperature) {
-        // TODO : si temperature > 80
-        //        notifier tous les abonnes
+        std::cout << "Mesure de la température : " << temperature << "°C\n";
+
+        if (temperature > 80.0)
+        {
+            for (const auto &callback : abonnes)
+            {
+                callback(temperature);
+            }
+        }
+    }
+};
+
+class AlertEmail
+{
+public:
+    void notifier(double temperature)
+    {
+        std::cout << "Alerte Email : Température critique de " << temperature << "°C\n";
+    }
+};
+
+class AlertSMS
+{
+public:
+    void notifier(double temperature)
+    {
+        std::cout << "Alerte SMS : Température critique de " << temperature << "°C\n";
+    }
+};
+
+class AlertDashboard
+{
+public:
+    void notifier(double temperature)
+    {
+        std::cout << "Alerte Dashboard : Température critique de " << temperature << "°C\n";
     }
 };
 
 int main() {
     CapteurTemperature capteur;
 
-    // TODO : abonnement email
-    // TODO : abonnement SMS
-    // TODO : abonnement dashboard
+    AlertEmail email;
+    AlertSMS sms;
+    AlertDashboard dashboard;
+
+    capteur.subscribe([&email](double temperature)
+                      { email.notifier(temperature); });
+
+    capteur.subscribe([&sms](double temperature)
+                      { sms.notifier(temperature); });
+
+    capteur.subscribe([&dashboard](double temperature)
+                      { dashboard.notifier(temperature); });
 
     capteur.mesurer(65);
     capteur.mesurer(85);
