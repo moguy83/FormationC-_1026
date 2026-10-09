@@ -1,0 +1,4 @@
+build/
+benchmark.csv
+requetes.jsonl
+callgrind.*

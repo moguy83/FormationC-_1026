@@ -1,0 +1,5 @@
+Extrait de la démonstration volontairement fautive. Code de sortie : 66.
+WARNING: ThreadSanitizer: data race (pid=10)
+SUMMARY: ThreadSanitizer: data race Corriges_TP_Jour4/TP15_concurrence/tp15c_data_race.cpp:17 in operator()
+WARNING: ThreadSanitizer: data race (pid=10)
+SUMMARY: ThreadSanitizer: data race Corriges_TP_Jour4/TP15_concurrence/tp15c_data_race.cpp:17 in operator()

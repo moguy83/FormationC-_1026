@@ -22,4 +22,6 @@ add_test(NAME Couverture COMMAND tp8C)
 // ctest --test-dir build --output-on-failure
 
 // gcovr --root . --object-directory build --filter '.*remise\.hpp' --txt 
-// gcovr --root . --object-directory build --filter '.*remise\.hpp' --branches --txt 
+// gcovr --root . --object-directory build --filter '.*remise\.hpp' --branches --txt
+
+//cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=/chemin/vers/vcpkg/scripts/buildsystems/vcpkg.cmake

@@ -1,0 +1,5 @@
+build/
+rapports/
+*.gcda
+*.gcno
+catalogue.json

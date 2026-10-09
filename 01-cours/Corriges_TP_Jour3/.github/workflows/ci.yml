@@ -1,0 +1,97 @@
+name: CI Jour 3
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: formation
+          POSTGRES_PASSWORD: formation_test
+          POSTGRES_DB: bibliotheque_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U formation -d bibliotheque_test"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: "host=127.0.0.1 port=5432 dbname=bibliotheque_test user=formation password=formation_test connect_timeout=3"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer les outils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libpq-dev cppcheck clang-tidy gcovr
+      - name: Configurer
+        # Couverture uniquement en Debug, sans optimisation.
+        run: >-
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DBUILD_INTEGRATION_TESTS=ON
+          -DENABLE_COVERAGE=${{ matrix.build_type == 'Debug' && 'ON' || 'OFF' }}
+      - name: Compiler
+        run: cmake --build build --parallel 2
+      - name: Tester
+        run: ctest --test-dir build --output-on-failure
+      - name: Analyse cppcheck
+        if: matrix.build_type == 'Debug'
+        run: >-
+          cppcheck --enable=warning,performance,portability --error-exitcode=1
+          --std=c++20 --suppress=missingIncludeSystem
+          -I TP11_12_bibliotheque/include TP11_12_bibliotheque/src
+      - name: Analyse clang-tidy
+        if: matrix.build_type == 'Debug'
+        run: >-
+          clang-tidy -p build TP11_12_bibliotheque/src/auteur.cpp
+          TP11_12_bibliotheque/src/livre.cpp TP11_12_bibliotheque/src/catalogue.cpp
+          TP11_12_bibliotheque/src/catalogue_bdd.cpp
+          --checks='-*,clang-analyzer-*,bugprone-use-after-move,bugprone-dangling-handle'
+          --warnings-as-errors='*'
+      - name: Couverture du code metier - seuil 85 pourcent
+        if: matrix.build_type == 'Debug'
+        # Périmètre explicite : bibliothèque + adaptateur BDD, hors main et code tiers.
+        run: |
+          mkdir -p rapports
+          gcovr --root . --filter 'TP11_12_bibliotheque/src/(auteur|livre|catalogue|catalogue_bdd)\.cpp' --exclude-unreachable-branches --fail-under-line 85 --print-summary --xml-pretty --output rapports/coverage.xml
+          gcovr --root . --filter 'TP11_12_bibliotheque/src/(auteur|livre|catalogue|catalogue_bdd)\.cpp' --html-details rapports/coverage.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapports-${{ matrix.build_type }}
+          path: |
+            build/Testing/Temporary/
+            rapports/
+  deploy:
+    needs: [build-and-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # Un job ne récupère PAS le répertoire build d'un autre job : reconstruire ici.
+      - uses: actions/checkout@v4
+      - name: Outils de packaging
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ dpkg-dev
+      - name: Paquet Release
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+          cmake --build build --parallel 2
+          cd build
+          cpack -G DEB
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bibliotheque-deb
+          path: build/*.deb
+# Le « déploiement » du support est la publication d'un paquet en artefact,
+# pas une installation sur un serveur de production.
